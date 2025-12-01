@@ -45,7 +45,7 @@ import fruit_labels
 
 DATASET_BASE = "fruits-360"
 
-LIMIT_DATA = 0 # 1 = limit, 0 = don't limit
+LIMIT_DATA = False # True = limit, False = don't limit
 NUM_TRAIN_IMAGES = 12000 # total images to actually use for training
 NUM_TEST_IMAGES = 3200 # total images to actually use for testing
 
