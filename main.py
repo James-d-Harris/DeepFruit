@@ -45,6 +45,7 @@ import fruit_labels
 
 DATASET_BASE = "fruits-360"
 
+LIMIT_DATA = 0 # 1 = limit, 0 = don't limit
 NUM_TRAIN_IMAGES = 12000 # total images to actually use for training
 NUM_TEST_IMAGES = 3200 # total images to actually use for testing
 
@@ -188,9 +189,6 @@ def scan_test_folders_for_anomalies(
         else:
             print(f"\nFolder '{folder}' — no anomalies ({count} images): Clean")
 
-
-        print()
-
     print(f"\nCorrect: '{correct}' - Incorrect: '{incorrect}' - Percentage: '{(correct / (correct + incorrect)) * 100}'")
     print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives} | False Negatives vs. False Positives: {false_negatives / false_positives * 100}")
    
@@ -207,7 +205,7 @@ def main():
         split=TRAIN_SPLIT_NAME,
         max_images_per_class=None,
         exclude_rotten=True,
-        # total_limit=NUM_TRAIN_IMAGES,
+        total_limit=LIMIT_DATA and None or NUM_TRAIN_IMAGES,
     )
 
     n_train_full = X_train_full.shape[0]
@@ -229,18 +227,13 @@ def main():
         split=TEST_SPLIT_NAME,
         max_images_per_class=None,
         exclude_rotten=False,
-        # total_limit=NUM_TEST_IMAGES,
+        total_limit=LIMIT_DATA and None or NUM_TEST_IMAGES,
     )
 
     n_test_full = X_test_full.shape[0]
-    if n_test_full <= NUM_TEST_IMAGES:
-        X_test = X_test_full
-        print(f"Test set has only {n_test_full} images; using all of them.")
-    else:
-        idx_test = np.random.choice(n_test_full, size=NUM_TEST_IMAGES, replace=False)
-        X_test = X_test_full[idx_test]
-        y_test_full = y_test_full[idx_test]
-        print(f"Sampled {NUM_TEST_IMAGES} Apple images out of {n_test_full} for testing.")
+    X_test = X_test_full
+    print(f"Test set has {n_test_full} images")
+
 
     print(f"X_test shape: {X_test.shape}")
 
@@ -291,7 +284,7 @@ def main():
         split=TEST_SPLIT_NAME,
         threshold=threshold,
         max_images_per_folder=None,
-        # max_images=NUM_TEST_IMAGES,
+        max_images=LIMIT_DATA and None or NUM_TEST_IMAGES,
     )
 
     print("Run complete.")
