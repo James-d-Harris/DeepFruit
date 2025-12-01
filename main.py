@@ -45,7 +45,7 @@ import fruit_labels
 
 DATASET_BASE = "fruits-360"
 
-LIMIT_DATA = 0 # 1 = limit, 0 = don't limit
+LIMIT_DATA = False # True = limit, False = don't limit
 NUM_TRAIN_IMAGES = 12000 # total images to actually use for training
 NUM_TEST_IMAGES = 3200 # total images to actually use for testing
 
@@ -179,15 +179,12 @@ def scan_test_folders_for_anomalies(
                 correct += 1
                 good = 1
 
-        if num_anoms > 0:
-            print(
-                f"\nFolder '{folder}' — {num_anoms} anomalies "
-                f"out of {count} ({anomaly_pct:.2f}%): {status}"
-                f" | {good == 1 and 'correct' or 'incorrect'} | "
-                f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
-            )
-        else:
-            print(f"\nFolder '{folder}' — no anomalies ({count} images): Clean")
+        print(
+            f"\nFolder '{folder}' — {num_anoms} anomalies "
+            f"out of {count} ({anomaly_pct:.2f}%): {status}"
+            f" | {good == 1 and 'correct' or 'incorrect'} | "
+            f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
+        )
 
     print(f"\nCorrect: '{correct}' - Incorrect: '{incorrect}' - Percentage: '{(correct / (correct + incorrect)) * 100}'")
     print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives} | False Negatives vs. False Positives: {false_negatives / false_positives * 100}")
@@ -200,39 +197,27 @@ def main():
 
     #  Load training data
     print("Loading training data (non-rotten only)...")
-    X_train_full, y_train_full = load_fruits360_split(
+    X_train, y_train = load_fruits360_split(
         base_dir=DATASET_BASE,
         split=TRAIN_SPLIT_NAME,
         max_images_per_class=None,
         exclude_rotten=True,
-        total_limit=LIMIT_DATA and None or NUM_TRAIN_IMAGES,
+        total_limit=NUM_TRAIN_IMAGES if LIMIT_DATA else None,
     )
-
-    n_train_full = X_train_full.shape[0]
-    if n_train_full <= NUM_TRAIN_IMAGES:
-        X_train = X_train_full
-        print(f"Training set has only {n_train_full} images; using all of them.")
-    else:
-        idx = np.random.choice(n_train_full, size=NUM_TRAIN_IMAGES, replace=False)
-        X_train = X_train_full[idx]
-        y_train_full = y_train_full[idx]
-        print(f"Sampled {NUM_TRAIN_IMAGES} Apple images out of {n_train_full} for training.")
+    print(f"Training set has {X_train.shape[0]} images; using all of them.")
 
     print(f"X_train shape: {X_train.shape}")
 
     # Load test data (mixed, no rotten filtering)
     print("\nLoading test data (mixed, no rotten filtering)...")
-    X_test_full, y_test_full = load_fruits360_split(
+    X_test, y_test = load_fruits360_split(
         base_dir=DATASET_BASE,
         split=TEST_SPLIT_NAME,
         max_images_per_class=None,
         exclude_rotten=False,
-        total_limit=LIMIT_DATA and None or NUM_TEST_IMAGES,
+        total_limit=NUM_TEST_IMAGES if LIMIT_DATA else None,
     )
-
-    n_test_full = X_test_full.shape[0]
-    X_test = X_test_full
-    print(f"Test set has {n_test_full} images")
+    print(f"Test set has {X_test.shape[0]} images")
 
 
     print(f"X_test shape: {X_test.shape}")
@@ -284,7 +269,7 @@ def main():
         split=TEST_SPLIT_NAME,
         threshold=threshold,
         max_images_per_folder=None,
-        max_images=LIMIT_DATA and None or NUM_TEST_IMAGES,
+        max_images=NUM_TEST_IMAGES if LIMIT_DATA else None,
     )
 
     print("Run complete.")
