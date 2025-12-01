@@ -36,6 +36,7 @@ from dataset_loader import load_fruits360_split
 from cnn_vae import build_vae
 from pathlib import Path
 from pre_processing import preprocess_image
+import fruit_labels
 
 
 # -------------------------
@@ -44,8 +45,10 @@ from pre_processing import preprocess_image
 
 DATASET_BASE = "fruits-360"
 
-NUM_TRAIN_IMAGES = 6400 # total images to actually use for training
-NUM_TEST_IMAGES = 1600 # total images to actually use for testing
+NUM_TRAIN_IMAGES = 12000 # total images to actually use for training
+NUM_TEST_IMAGES = 3200 # total images to actually use for testing
+
+ANOMALY_THRESH_PERCENT = 10
 
 EPOCHS = 60
 BATCH_SIZE = 64
@@ -76,7 +79,7 @@ def scan_test_folders_for_anomalies(
     if not root.exists():
         raise FileNotFoundError(f"Test directory not found: {root}")
 
-    anomalies = {}
+    anomalies: dict[str, dict] = {}
     total_images_seen = 0
 
     for class_dir in sorted(d for d in root.iterdir() if d.is_dir()):
@@ -86,7 +89,7 @@ def scan_test_folders_for_anomalies(
         folder_name = class_dir.name
         print(f"\nScanning folder: {folder_name}")
 
-        folder_anomalies = []
+        folder_anomalies: list[tuple[str, float]] = []
         images_seen = 0
 
 
@@ -106,7 +109,7 @@ def scan_test_folders_for_anomalies(
                 x = norm[np.newaxis, ...]
 
                 # Compute error
-                err = reconstruction_error(vae, x)[0]
+                err = float(reconstruction_error(vae, x)[0])
                 images_seen += 1
                 total_images_seen += 1
 
@@ -120,18 +123,76 @@ def scan_test_folders_for_anomalies(
             if max_images_per_folder is not None and images_seen >= max_images_per_folder:
                 break
 
-        anomalies[folder_name] = folder_anomalies
+        # If no images were processed for this folder, skip storing
+        if images_seen == 0:
+            continue
+
+        anomaly_percent = (len(folder_anomalies) / images_seen) * 100.0
+        is_anomalous = anomaly_percent >= ANOMALY_THRESH_PERCENT
+
+        anomalies[folder_name] = {
+            "Anomalies": folder_anomalies,
+            "ItemCount": images_seen,
+            "Anomaly": is_anomalous,
+            "AnomalyPercent": anomaly_percent,
+        }
 
     # -------- Summary --------
     print("\n===== ANOMALY SUMMARY =====")
-    for folder, items in anomalies.items():
-        if items:
-            print(f"\nFolder '{folder}' — {len(items)} anomalies:")
-            # for fname, err in items:
-                # print(f"    {fname} — error {err:.6f}")
-        else:
-            print(f"\nFolder '{folder}' — no anomalies")
+    if not anomalies:
+        print("No folders scanned (check max_images and dataset paths).")
+        return anomalies
 
+    correct = 0
+    incorrect = 0
+    false_positives = 0
+    false_negatives = 0
+
+    for folder, items in anomalies.items():
+        num_anoms = len(items["Anomalies"])
+        count = items["ItemCount"]
+        anomaly_pct = items["AnomalyPercent"]
+        status = "Anomaly" if items["Anomaly"] else "Clean"
+
+        good = 0
+        false_negatives_positive = -1
+
+        if num_anoms > 0:
+            print(
+                f"\nFolder '{folder}' — {num_anoms} anomalies "
+                f"out of {count} ({anomaly_pct:.2f}%): {status}"
+                f" | {good == 1 and 'correct' or 'incorrect'} | "
+                f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
+            )
+        else:
+            print(f"\nFolder '{folder}' — no anomalies ({count} images): Clean")
+
+        value = fruit_labels.rotten_fruit.get(folder, -1)
+
+        if value == 0:
+            if status == "Anomaly":
+                false_positives += 1
+                false_negatives_positive = 1
+                incorrect += 1
+                good = -1
+            else: 
+                correct += 1
+                good = 1
+        elif value == 1:
+            if status == "Clean":
+                false_negatives += 1
+                false_negatives_positive = 0
+                incorrect += 1
+                good = -1
+            else:
+                correct += 1
+                good = 1
+
+        print()
+
+    print(f"\nCorrect: '{correct}' - Incorrect: '{incorrect}' - Percentage: '{(correct / (correct + incorrect)) * 100}'")
+    print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives} | False Negatives vs. False Positives: {false_negatives / false_positives * 100}")
+   
     return anomalies
 
 def main():
@@ -155,7 +216,8 @@ def main():
     else:
         idx = np.random.choice(n_train_full, size=NUM_TRAIN_IMAGES, replace=False)
         X_train = X_train_full[idx]
-        print(f"Sampled {NUM_TRAIN_IMAGES} images out of {n_train_full} for training.")
+        y_train_full = y_train_full[idx]
+        print(f"Sampled {NUM_TRAIN_IMAGES} Apple images out of {n_train_full} for training.")
 
     print(f"X_train shape: {X_train.shape}")
 
@@ -177,7 +239,7 @@ def main():
         idx_test = np.random.choice(n_test_full, size=NUM_TEST_IMAGES, replace=False)
         X_test = X_test_full[idx_test]
         y_test_full = y_test_full[idx_test]
-        print(f"Sampled {NUM_TEST_IMAGES} images out of {n_test_full} for testing.")
+        print(f"Sampled {NUM_TEST_IMAGES} Apple images out of {n_test_full} for testing.")
 
     print(f"X_test shape: {X_test.shape}")
 
