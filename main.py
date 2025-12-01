@@ -202,7 +202,7 @@ def main():
         split=TRAIN_SPLIT_NAME,
         max_images_per_class=None,
         exclude_rotten=True,
-        total_limit=LIMIT_DATA and None or NUM_TRAIN_IMAGES,
+        total_limit=not LIMIT_DATA and None or NUM_TRAIN_IMAGES,
     )
 
     n_train_full = X_train_full.shape[0]
@@ -224,7 +224,7 @@ def main():
         split=TEST_SPLIT_NAME,
         max_images_per_class=None,
         exclude_rotten=False,
-        total_limit=LIMIT_DATA and None or NUM_TEST_IMAGES,
+        total_limit=not LIMIT_DATA and None or NUM_TEST_IMAGES,
     )
 
     n_test_full = X_test_full.shape[0]
@@ -281,7 +281,7 @@ def main():
         split=TEST_SPLIT_NAME,
         threshold=threshold,
         max_images_per_folder=None,
-        max_images=LIMIT_DATA and None or NUM_TEST_IMAGES,
+        max_images=not LIMIT_DATA and None or NUM_TEST_IMAGES,
     )
 
     print("Run complete.")
