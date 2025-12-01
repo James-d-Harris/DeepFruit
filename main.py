@@ -156,17 +156,7 @@ def scan_test_folders_for_anomalies(
 
         good = 0
         false_negatives_positive = -1
-
-        if num_anoms > 0:
-            print(
-                f"\nFolder '{folder}' — {num_anoms} anomalies "
-                f"out of {count} ({anomaly_pct:.2f}%): {status}"
-                f" | {good == 1 and 'correct' or 'incorrect'} | "
-                f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
-            )
-        else:
-            print(f"\nFolder '{folder}' — no anomalies ({count} images): Clean")
-
+        
         value = fruit_labels.rotten_fruit.get(folder, -1)
 
         if value == 0:
@@ -187,6 +177,17 @@ def scan_test_folders_for_anomalies(
             else:
                 correct += 1
                 good = 1
+
+        if num_anoms > 0:
+            print(
+                f"\nFolder '{folder}' — {num_anoms} anomalies "
+                f"out of {count} ({anomaly_pct:.2f}%): {status}"
+                f" | {good == 1 and 'correct' or 'incorrect'} | "
+                f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
+            )
+        else:
+            print(f"\nFolder '{folder}' — no anomalies ({count} images): Clean")
+
 
         print()
 
