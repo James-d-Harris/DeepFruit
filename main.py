@@ -179,15 +179,12 @@ def scan_test_folders_for_anomalies(
                 correct += 1
                 good = 1
 
-        if num_anoms > 0:
-            print(
-                f"\nFolder '{folder}' — {num_anoms} anomalies "
-                f"out of {count} ({anomaly_pct:.2f}%): {status}"
-                f" | {good == 1 and 'correct' or 'incorrect'} | "
-                f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
-            )
-        else:
-            print(f"\nFolder '{folder}' — no anomalies ({count} images): Clean")
+        print(
+            f"\nFolder '{folder}' — {num_anoms} anomalies "
+            f"out of {count} ({anomaly_pct:.2f}%): {status}"
+            f" | {good == 1 and 'correct' or 'incorrect'} | "
+            f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
+        )
 
     print(f"\nCorrect: '{correct}' - Incorrect: '{incorrect}' - Percentage: '{(correct / (correct + incorrect)) * 100}'")
     print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives} | False Negatives vs. False Positives: {false_negatives / false_positives * 100}")
