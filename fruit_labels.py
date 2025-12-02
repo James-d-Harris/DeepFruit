@@ -1,5 +1,5 @@
 rotten_fruit = {
-    "Apple 5": 1,
+    "Apple 5": 0,
     "Apple 6": 1,
     "Apple 7": 1,
     "Apple 8": 1,
@@ -14,7 +14,7 @@ rotten_fruit = {
     "Apple 19": 1,
     "Apple Braeburn 1": 0,
     "Apple Core 1": 1,
-    "Apple Crimson Snow": 0,
+    "Apple Crimson Snow 1": 0,
     "Apple Golden 1": 1,
     "Apple Golden 2": 0,
     "Apple Golden 3": 1,
