@@ -182,7 +182,7 @@ def scan_test_folders_for_anomalies(
         print(
             f"\nFolder '{folder}' — {num_anoms} anomalies "
             f"out of {count} ({anomaly_pct:.2f}%): {status}"
-            f" | {good == 1 and 'correct' or 'incorrect'} | "
+            f" | {good == 1 and 'Correct' or 'Incorrect'} | "
             f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
         )
 
