@@ -187,7 +187,7 @@ def scan_test_folders_for_anomalies(
         )
 
     print(f"\nCorrect: '{correct}' - Incorrect: '{incorrect}' - Percentage: '{(correct / (correct + incorrect)) * 100}'")
-    print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives} | False Negatives vs. False Positives: {false_negatives / false_positives * 100}")
+    print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives} ")
    
     return anomalies
 
