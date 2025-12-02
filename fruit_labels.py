@@ -24,4 +24,8 @@ rotten_fruit = {
     "Apple Red 1": 0,
     "Apple Red 2": 0,
     "Apple Red 3": 0,
+    "Apple Red Delicious 1": 0,
+    "Apple Red Yellow 1": 1,
+    "Apple Rotten 1": 1,
+    "Apple worm 1": 1,
 }
