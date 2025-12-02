@@ -37,7 +37,7 @@ from cnn_vae import build_vae
 from pathlib import Path
 from pre_processing import preprocess_image
 import fruit_labels
-
+import matplotlib.pyplot as plt
 
 # -------------------------
 # Configuration
@@ -46,8 +46,8 @@ import fruit_labels
 DATASET_BASE = "fruits-360"
 
 LIMIT_DATA = False # True = limit, False = don't limit
-NUM_TRAIN_IMAGES = 12000 # total images to actually use for training
-NUM_TEST_IMAGES = 3200 # total images to actually use for testing
+NUM_TRAIN_IMAGES = 1600 # total images to actually use for training
+NUM_TEST_IMAGES = 800 # total images to actually use for testing
 
 ANOMALY_THRESH_PERCENT = 10
 
@@ -186,10 +186,103 @@ def scan_test_folders_for_anomalies(
             f"{false_negatives_positive == 1 and 'False Positive' or false_negatives_positive == 0 and 'False Negative' or 'Neither'}"
         )
 
-    print(f"\nCorrect: '{correct}' - Incorrect: '{incorrect}' - Percentage: '{(correct / (correct + incorrect)) * 100}'")
-    print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives} ")
+    if total_images_seen > 0:
+        print(f"\nCorrect: '{correct}' - Incorrect: '{incorrect}' - Percentage: '{(correct / (correct + incorrect)) * 100}'")
+        print(f"\nFalse Positives: {false_positives} | False Negatives: {false_negatives}")
    
     return anomalies
+
+def show_reconstructions(vae, X, num_images=10):
+    """Display original and reconstructed images side-by-side."""
+    
+    # Take a small batch
+    X_sample = X[:num_images]
+    
+    # Get reconstructions
+    X_recon = vae.predict(X_sample, verbose=0)
+    
+    # Plot
+    plt.figure(figsize=(num_images * 2, 4))
+    
+    for i in range(num_images):
+        # Original
+        ax = plt.subplot(2, num_images, i + 1)
+        plt.imshow(X_sample[i].squeeze(), cmap="gray")
+        ax.set_title("Original")
+        plt.axis("off")
+        
+        # Reconstructed
+        ax = plt.subplot(2, num_images, num_images + i + 1)
+        plt.imshow(X_recon[i].squeeze(), cmap="gray")
+        ax.set_title("Reconstructed")
+        plt.axis("off")
+    
+    plt.tight_layout()
+    plt.show()
+
+def sweep_percentiles(vae, X_train, percentiles=[90,92,95,98]):
+    """Test accuracy, FP, and FN for percentiles 80–99 and print results."""
+    from copy import deepcopy
+
+    print("\n===== SWEEPING PERCENTILES =====")
+
+    # Compute reconstruction errors on training data
+    train_errors = reconstruction_error(vae, X_train)
+
+    results = []
+
+    for p in percentiles:
+        threshold = np.percentile(train_errors, p)
+
+        print(f"\n--- Percentile {p}% (threshold={threshold:.6f}) ---")
+
+        # Re-run the full folder scanning but WITHOUT limiting images
+        anomalies = scan_test_folders_for_anomalies(
+            vae,
+            base_dir=DATASET_BASE,
+            split=TEST_SPLIT_NAME,
+            threshold=threshold,
+            max_images_per_folder=None,
+            max_images=NUM_TEST_IMAGES if LIMIT_DATA else None,
+        )
+
+        # Collect accuracy numbers
+        correct = incorrect = 0
+        fp = fn = 0
+
+        for folder, info in anomalies.items():
+            status = info["Anomaly"]
+            value = fruit_labels.rotten_fruit.get(folder, -1)
+
+            if value == 0:  # clean folder
+                if status:  # incorrectly flagged
+                    fp += 1
+                    incorrect += 1
+                else:
+                    correct += 1
+
+            elif value == 1:  # rotten folder
+                if not status:
+                    fn += 1
+                    incorrect += 1
+                else:
+                    correct += 1
+
+        acc = correct / (correct + incorrect) if (correct + incorrect) > 0 else 0
+        results.append((p, acc, fp, fn))
+
+        print(f"Accuracy: {acc*100:.2f}% | FP={fp} | FN={fn}")
+
+    # Print summary table
+    print("\n===== SWEEP SUMMARY =====")
+    for p, acc, fp, fn in results:
+        print(f"{p}%  => Accuracy={acc*100:.2f}%  FP={fp}  FN={fn}")
+
+    # Choose best percentile
+    best = max(results, key=lambda r: r[1])
+    print(f"\nBEST PERCENTILE: {best[0]}%  (Accuracy={best[1]*100:.2f}%)")
+    print(f"False Positives={best[2]} | False Negatives={best[3]}")
+
 
 def main():
     # Make TensorFlow quieter
@@ -235,6 +328,13 @@ def main():
         batch_size=BATCH_SIZE,
         validation_split=0.1,
     )
+
+    print("\nShowing sample reconstructions...")
+    show_reconstructions(vae, X_test, num_images=10)
+
+    # print("\nRunning percentile sweep...")
+    # sweep_percentiles(vae, X_train)
+
 
     # Compute reconstruction errors on train and test 
     print("\nComputing reconstruction errors...")
